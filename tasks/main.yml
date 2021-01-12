@@ -1,0 +1,15 @@
+---
+# tasks file for netapp-cloud-insights
+- name: Install telegraf
+  include_tasks: 
+    file: install.yml
+    apply:
+      tags: ['telegraf', 'install']
+  tags: ['always']
+
+- name: Configure telegraf
+  include_tasks:
+    file: configure.yml
+    apply:
+      tags: ['telegraf', 'configure']
+  tags: ['always']

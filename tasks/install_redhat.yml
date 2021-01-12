@@ -1,0 +1,24 @@
+---
+- name: Add yum repository
+  yum_repository:
+    name: influxdb
+    description: "InfluxDB Repository - {{ ansible_os_family }}"
+    baseurl: "{{ telegraf_yum_baseurl[ansible_distribution|lower] }}"
+    gpgcheck: "{{ telegraf_yum_gpgcheck }}"
+    gpgkey: https://repos.influxdata.com/influxdb.key
+
+- name: Install telegraf package
+  yum:
+    name: "{{ telegraf_agent_package }}"
+    state: present
+  register: is_telegraf_package_installed
+  until: is_telegraf_package_installed is succeeded
+  notify:
+    - "Gather facts"
+    - "Restart telegraf"
+
+- name: Start and enable telegraf at boot
+  service:
+    name: telegraf
+    enabled: yes
+    state: started

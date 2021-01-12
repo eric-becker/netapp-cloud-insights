@@ -1,0 +1,35 @@
+---
+# CloudInsights API
+cloudinsights_domain:
+cloudinsights_apikey:
+cloudinsights_url: "https://{{ cloudinsights_domain }}/rest/v1/lake/ingest/influxdb"
+
+# package name
+telegraf_agent_package: telegraf
+
+# RedHat repo
+#telegraf_yum_baseurl: "https://repos.influxdata.com/{{ ansible_distribution|lower }}/$releasever/$basearch/stable"
+telegraf_yum_baseurl:
+  centos: "https://repos.influxdata.com/centos/$releasever/$basearch/stable"
+  redhat: "https://repos.influxdata.com/rhel/$releasever/$basearch/stable"
+telegraf_yum_gpgcheck: false
+
+# SuSE repo
+telegraf_zypper_baseurl: "http://download.opensuse.org/repositories/devel:/languages:/go/openSUSE_Leap_15.1"
+telegraf_zypper_name: "The Go Programming Language (openSUSE_Leap_15.1)"
+
+# extra configuration - /etc/telegraf/telegraf.d/*
+telegraf_plugins_extra: {}
+
+# extra configuration - /etc/telegraf/scripts/*
+telegraf_custom_scripts: []
+
+# Windows settings
+telegraf_agent_version: 1.17.0
+telegraf_win_install_dir: 'C:\Telegraf'
+telegraf_win_logfile: 'C:\\Telegraf\\telegraf.log'
+telegraf_win_include: 'C:\Telegraf\telegraf_agent.d'
+telegraf_win_service_args:
+  - -service install
+  - -config {{ telegraf_win_install_dir }}\telegraf\telegraf.conf
+  - --config-directory {{ telegraf_win_include }}

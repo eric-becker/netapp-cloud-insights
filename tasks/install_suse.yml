@@ -1,0 +1,65 @@
+---
+- name: Adding telegraf group
+  group:
+    name: telegraf
+    state: present
+
+- name: Adding telegraf user
+  user:
+    name: telegraf
+    group: telegraf
+    state: present
+  become: yes
+
+- name: Install repo dependencies
+  zypper:
+    name: ["python-libxml2", "python-xml", "insserv-compat"]
+    update_cache: True
+    state: present
+  register: are_telegraf_dependencies_packages_installed
+  until: are_telegraf_dependencies_packages_installed is succeeded
+  become: yes
+
+- name: Install basic repo file
+  zypper_repository:
+    repo: "{{ telegraf_zypper_baseurl }}"
+    name: "{{ telegraf_zypper_name }}"
+    state: present
+    runrefresh: True
+    auto_import_keys: True
+  become: yes
+
+- name: Install telegraf
+  zypper:
+    name: "{{ telegraf_agent_package }}"
+    update_cache: True
+    state: "{{ telegraf_agent_package_state }}"
+  register: is_telegraf_package_installed
+  until: is_telegraf_package_installed is succeeded
+  become: yes
+  notify:
+    - "Gather facts"
+    - "Restart telegraf"
+
+- name: Create directories for telegraf
+  file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    state: directory
+  with_items:
+    - path: /etc/telegraf/telegraf.d/
+      owner: root
+    - path: /var/log/telegraf
+      owner: telegraf
+
+- name: Install init file
+  copy:
+    src: telegraf.init
+    dest: /etc/init.d/telegraf
+    mode: 0755
+
+- name: Start and enable telegraf at boot
+  service:
+    name: telegraf
+    enabled: yes
+    state: started

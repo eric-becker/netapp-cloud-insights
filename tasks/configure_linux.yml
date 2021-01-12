@@ -1,0 +1,161 @@
+---
+- name: Create telegraf path
+  file:
+    state: directory
+    path: /etc/telegraf
+    owner: telegraf
+    group: telegraf
+    mode: 0755
+  become: yes
+  notify: Restart telegraf
+
+- name: Configure default telegraf.conf
+  template:
+    src: telegraf.conf.j2
+    dest: /etc/telegraf/telegraf.conf
+    owner: telegraf
+    group: telegraf
+    mode: 0640
+    backup: yes
+  become: yes
+  notify: Restart telegraf
+
+- name: Get UUID
+  shell: "dmidecode -s system-uuid |tr '[:lower:]' '[:upper:]'"
+  become: yes
+  register: dmi_results
+  changed_when: false
+
+- name: Set UUID
+  set_fact:
+    agent_node_uuid: "{{ dmi_results.stdout }}"
+
+- name: Configure cloudinsights-default.conf
+  template:
+    src: cloudinsights-default.conf.j2
+    dest: /etc/telegraf/telegraf.d/cloudinsights-default.conf
+    owner: telegraf
+    group: telegraf
+    mode: 0640
+    backup: yes
+  become: yes
+  notify: Restart telegraf
+
+- name: Configure cloudinsights-netstat.conf
+  template:
+    src: cloudinsights-netstat.conf.j2
+    dest: /etc/telegraf/telegraf.d/cloudinsights-netstat.conf
+    owner: telegraf
+    group: telegraf
+    mode: 0640
+    backup: yes
+  become: yes
+  notify: Restart telegraf
+
+- name: Create telegraf extra plugin path
+  file:
+    state: directory
+    path: /etc/telegraf/telegraf.d/
+    owner: telegraf
+    group: telegraf
+    mode: 0755
+  become: yes
+  notify: Restart telegraf
+
+- name: Copy telegraf extra plugins
+  template:
+    src: telegraf-extra-plugin.conf.j2
+    dest: "/etc/telegraf/telegraf.d/{{ item.key }}.conf"
+    owner: telegraf
+    group: telegraf
+    mode: 0640
+  with_dict: "{{ telegraf_plugins_extra }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - telegraf_plugins_extra is defined
+    - telegraf_plugins_extra is iterable
+    - item.value.state|d('present') != 'absent'
+  become: yes
+  notify: Restart telegraf
+
+- name: Remove telegraf extra plugins
+  file:
+    path: "/etc/telegraf/telegraf.d/{{ item.key }}.conf"
+    state: absent
+  with_dict: "{{ telegraf_plugins_extra }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - telegraf_plugins_extra is defined
+    - telegraf_plugins_extra is iterable
+    - item.value.state|d('present') == 'absent'
+  become: yes
+  notify: Restart telegraf
+
+- name: Create telegraf scripts path
+  file:
+    state: directory
+    path: /etc/telegraf/scripts/
+    owner: telegraf
+    group: telegraf
+    mode: 0755
+  when:
+    - telegraf_custom_scripts is defined
+    - telegraf_custom_scripts is iterable
+  become: yes
+  notify: Restart telegraf
+
+- name: Copy telegraf custom scripts
+  copy:
+    src: "{{ item.file }}"
+    dest: "/etc/telegraf/scripts/{{ item.file }}"
+    owner: telegraf
+    group: telegraf
+    mode: 0755
+    backup: yes
+  loop: "{{ telegraf_custom_scripts }}"
+  when:
+    - telegraf_custom_scripts is defined
+    - telegraf_custom_scripts is iterable
+    - item.file is defined
+    - item.state|d('present') != 'absent'
+  become: yes
+  notify: Restart telegraf
+
+- name: Configure telegraf custom scripts
+  template:
+    src: "{{ item.template }}.j2"
+    dest: "/etc/telegraf/scripts/{{ item.template }}"
+    owner: telegraf
+    group: telegraf
+    mode: 0755
+    backup: yes
+  loop: "{{ telegraf_custom_scripts }}"
+  when:
+    - telegraf_custom_scripts is defined
+    - telegraf_custom_scripts is iterable
+    - item.template is defined
+    - item.state|d('present') != 'absent'
+  become: yes
+  notify: Restart telegraf
+
+- name: Configure telegraf groups
+  user:
+    name: telegraf
+    groups: "{{ telegraf_groups }}"
+  when:
+    - telegraf_groups is defined
+    - telegraf_groups is iterable
+  become: yes
+  notify: Restart telegraf
+
+- name: Force restart service after reread config
+  meta: flush_handlers
+
+- name: Start telegraf if not running
+  service:
+    name: telegraf
+    state: started
+    enabled: yes
+  become: yes

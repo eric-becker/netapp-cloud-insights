@@ -1,0 +1,361 @@
+
+    ##############################
+    ## agent
+    ##############################
+
+    [global_tags]
+      agent_node_uuid = "{{ agent_node_uuid }}"
+      agent_node_ip = "{{ ansible_default_ipv4.address }}"
+      agent_node_os = "{{ ansible_distribution }} {{ ansible_system }}"
+
+      ## USER-ACTION (optional): In case of UI display name clash, disambiguate with 'name_prefix' and/or 'name_suffix' values.
+      ## The tag(s) set here will be applied to all input plugins.  And, all Cloud Insights objects reported by this
+      ## Telegraf agent will be prepended and appended by the name_prefix and name_suffix, respectively.  To override
+      ## these values on a per-plugin-basis, modify the name_prefix and name_suffix values under the input plugin(s)
+      ## accordingly.
+      # name_prefix = "prefix"
+      # name_suffix = "suffix"
+
+      ## USER-ACTION (optional): The default name field separator for the UI display name is '-'.  Override this separator with a different character, if desired.
+      ## The tag set here will be applied to all input plugins.  And, all Cloud Insights objects reported by this
+      ## Telegraf agent will have name_separator separating the individual fields used to construct the UI display name.
+      ## To override this values on a per-plugin-basis, modify the name_separator under the input plugin(s) accordingly.
+      # name_separator = "-"
+
+      ## USER-ACTION: Provide cluster name
+      ## If the Telegraf agent is installed and running on a node that is part of a Kubernetes cluster, uncomment the line
+      ## below, and set the kubernetes_cluster tag value to the name of the Kubernetes cluster.
+      # kubernetes_cluster = "<INSERT_K8S_CLUSTER_NAME>"
+
+    [agent]
+      ## Default data collection interval for all inputs
+      interval = "10s"
+      ## Rounds collection interval to 'interval'
+      ## ie, if interval="10s" then always collect on :00, :10, :20, etc.
+      round_interval = true
+
+      ## Telegraf will send metrics to outputs in batches of at most
+      ## metric_batch_size metrics.
+      ## This controls the size of writes that Telegraf sends to output plugins.
+      metric_batch_size = 1000
+
+      ## For failed writes, telegraf will cache metric_buffer_limit metrics for each
+      ## output, and will flush this buffer on a successful write. Oldest metrics
+      ## are dropped first when this buffer fills.
+      ## This buffer only fills when writes fail to output plugin(s).
+      metric_buffer_limit = 10000
+
+      ## Collection jitter is used to jitter the collection by a random amount.
+      ## Each plugin will sleep for a random time within jitter before collecting.
+      ## This can be used to avoid many plugins querying things like sysfs at the
+      ## same time, which can have a measurable effect on the system.
+      collection_jitter = "0s"
+
+      ## Default flushing interval for all outputs. Maximum flush_interval will be
+      ## flush_interval + flush_jitter
+      flush_interval = "10s"
+      ## Jitter the flush interval by a random amount. This is primarily to avoid
+      ## large write spikes for users running a large number of telegraf instances.
+      ## ie, a jitter of 5s and interval 10s means flushes will happen every 10-15s
+      flush_jitter = "0s"
+
+      ## By default or when set to "0s", precision will be set to the same
+      ## timestamp order as the collection interval, with the maximum being 1s.
+      ##   ie, when interval = "10s", precision will be "1s"
+      ##       when interval = "250ms", precision will be "1ms"
+      ## Precision will NOT be used for service inputs. It is up to each individual
+      ## service input to set the timestamp at the appropriate precision.
+      ## Valid time units are "ns", "us", "ms", "s".
+      precision = ""
+
+      ## Logging configuration:
+      ## Run telegraf with debug log messages.
+      debug = false
+      ## Run telegraf in quiet mode (error log messages only).
+      quiet = false
+      ## Specify the log file name. The empty string means to log to stderr.
+      logfile = ""
+
+      ## Override default hostname, if empty use os.Hostname()
+      hostname = ""
+      ## If set to true, do no set the "host" tag in the telegraf agent.
+      omit_hostname = false
+
+    ##############################
+    ## cpu
+    ##############################
+
+    [[inputs.cpu]]
+      percpu = false
+      totalcpu = true
+      collect_cpu_time = true
+      report_active = true
+      [inputs.cpu.tags]
+        CloudInsights = "true"
+
+        ## USER-ACTION (optional): In case of UI display name clash, disambiguate with 'name_prefix' and/or 'name_suffix' values.
+        ## These tags can be set at the agent's global_tag level if the intent is to prepend and/or append the specified name_prefix
+        ## and name_suffix, respectively, to all Cloud Insights objects reported by this Telegraf agent.
+        # name_prefix = "prefix"
+        # name_suffix = "suffix"
+
+        ## USER-ACTION (optional): The default name field separator for the UI display name is '-'.  Override this separator with a different character, if desired.
+        ## This tag can be set at the agent's global_tag level if the intent is to use the same name field separator for all
+        ## Cloud Insights objects reported by this Telegraf agent.
+        # name_separator = "-"
+
+        cloudinsights_cpu_conf_version = "1.0"
+
+    [[outputs.http]]
+      url = "{{ cloudinsights_url }}"
+      insecure_skip_verify = true
+      data_format = "json"
+      namepass = ["cpu"]
+      tagexclude = ["CloudInsights", "cpu"]
+      [outputs.http.headers]
+        Content-Type = "application/json"
+        X-CloudInsights-ApiKey = "{{ cloudinsights_apikey }}"
+        X-CloudInsights-Lake-Category = "agent"
+      [outputs.http.tagpass]
+        CloudInsights = ["true"]
+
+    ##############################
+    ## disk
+    ##############################
+
+    [[inputs.disk]]
+      ignore_fs = ["tmpfs", "devtmpfs", "devfs"]
+      [inputs.disk.tags]
+        CloudInsights = "true"
+
+        ## USER-ACTION (optional): In case of UI display name clash, disambiguate with 'name_prefix' and/or 'name_suffix' values.
+        ## These tags can be set at the agent's global_tag level if the intent is to prepend and/or append the specified name_prefix
+        ## and name_suffix, respectively, to all Cloud Insights objects reported by this Telegraf agent.
+        # name_prefix = "prefix"
+        # name_suffix = "suffix"
+
+        ## USER-ACTION (optional): The default name field separator for the UI display name is '-'.  Override this separator with a different character, if desired.
+        ## This tag can be set at the agent's global_tag level if the intent is to use the same name field separator for all
+        ## Cloud Insights objects reported by this Telegraf agent.
+        # name_separator = "-"
+
+        cloudinsights_disk_conf_version = "1.0"
+
+    [[outputs.http]]
+      url = "{{ cloudinsights_url }}"
+      insecure_skip_verify = true
+      data_format = "json"
+      namepass = ["disk"]
+      tagexclude = ["CloudInsights"]
+      [outputs.http.headers]
+        Content-Type = "application/json"
+        X-CloudInsights-ApiKey = "{{ cloudinsights_apikey }}"
+        X-CloudInsights-Lake-Category = "agent"
+      [outputs.http.tagpass]
+        CloudInsights = ["true"]
+
+    ##############################
+    ## diskio
+    ##############################
+
+    [[inputs.diskio]]
+      [inputs.diskio.tags]
+        CloudInsights = "true"
+
+        ## USER-ACTION (optional): In case of UI display name clash, disambiguate with 'name_prefix' and/or 'name_suffix' values.
+        ## These tags can be set at the agent's global_tag level if the intent is to prepend and/or append the specified name_prefix
+        ## and name_suffix, respectively, to all Cloud Insights objects reported by this Telegraf agent.
+        # name_prefix = "prefix"
+        # name_suffix = "suffix"
+
+        ## USER-ACTION (optional): The default name field separator for the UI display name is '-'.  Override this separator with a different character, if desired.
+        ## This tag can be set at the agent's global_tag level if the intent is to use the same name field separator for all
+        ## Cloud Insights objects reported by this Telegraf agent.
+        # name_separator = "-"
+
+        cloudinsights_diskio_conf_version = "1.0"
+
+    [[outputs.http]]
+      url = "{{ cloudinsights_url }}"
+      insecure_skip_verify = true
+      data_format = "json"
+      namepass = ["diskio"]
+      tagexclude = ["CloudInsights"]
+      [outputs.http.headers]
+        Content-Type = "application/json"
+        X-CloudInsights-ApiKey = "{{ cloudinsights_apikey }}"
+        X-CloudInsights-Lake-Category = "agent"
+      [outputs.http.tagpass]
+        CloudInsights = ["true"]
+
+    ##############################
+    ## kernel
+    ##############################
+
+    [[inputs.kernel]]
+      [inputs.kernel.tags]
+        CloudInsights = "true"
+
+        ## USER-ACTION (optional): In case of UI display name clash, disambiguate with 'name_prefix' and/or 'name_suffix' values.
+        ## These tags can be set at the agent's global_tag level if the intent is to prepend and/or append the specified name_prefix
+        ## and name_suffix, respectively, to all Cloud Insights objects reported by this Telegraf agent.
+        # name_prefix = "prefix"
+        # name_suffix = "suffix"
+
+        ## USER-ACTION (optional): The default name field separator for the UI display name is '-'.  Override this separator with a different character, if desired.
+        ## This tag can be set at the agent's global_tag level if the intent is to use the same name field separator for all
+        ## Cloud Insights objects reported by this Telegraf agent.
+        # name_separator = "-"
+
+        cloudinsights_kernel_conf_version = "1.0"
+
+    [[outputs.http]]
+      url = "{{ cloudinsights_url }}"
+      insecure_skip_verify = true
+      data_format = "json"
+      namepass = ["kernel"]
+      tagexclude = ["CloudInsights"]
+      [outputs.http.headers]
+        Content-Type = "application/json"
+        X-CloudInsights-ApiKey = "{{ cloudinsights_apikey }}"
+        X-CloudInsights-Lake-Category = "agent"
+      [outputs.http.tagpass]
+        CloudInsights = ["true"]
+
+    ##############################
+    ## mem
+    ##############################
+
+    [[inputs.mem]]
+      [inputs.mem.tags]
+        CloudInsights = "true"
+
+        ## USER-ACTION (optional): In case of UI display name clash, disambiguate with 'name_prefix' and/or 'name_suffix' values.
+        ## These tags can be set at the agent's global_tag level if the intent is to prepend and/or append the specified name_prefix
+        ## and name_suffix, respectively, to all Cloud Insights objects reported by this Telegraf agent.
+        # name_prefix = "prefix"
+        # name_suffix = "suffix"
+
+        ## USER-ACTION (optional): The default name field separator for the UI display name is '-'.  Override this separator with a different character, if desired.
+        ## This tag can be set at the agent's global_tag level if the intent is to use the same name field separator for all
+        ## Cloud Insights objects reported by this Telegraf agent.
+        # name_separator = "-"
+
+        cloudinsights_mem_conf_version = "1.0"
+
+    [[outputs.http]]
+      url = "{{ cloudinsights_url }}"
+      insecure_skip_verify = true
+      data_format = "json"
+      namepass = ["mem"]
+      tagexclude = ["CloudInsights"]
+      [outputs.http.headers]
+        Content-Type = "application/json"
+        X-CloudInsights-ApiKey = "{{ cloudinsights_apikey }}"
+        X-CloudInsights-Lake-Category = "agent"
+      [outputs.http.tagpass]
+        CloudInsights = ["true"]
+
+    ##############################
+    ## processes
+    ##############################
+
+    [[inputs.processes]]
+      [inputs.processes.tags]
+        CloudInsights = "true"
+
+        ## USER-ACTION (optional): In case of UI display name clash, disambiguate with 'name_prefix' and/or 'name_suffix' values.
+        ## These tags can be set at the agent's global_tag level if the intent is to prepend and/or append the specified name_prefix
+        ## and name_suffix, respectively, to all Cloud Insights objects reported by this Telegraf agent.
+        # name_prefix = "prefix"
+        # name_suffix = "suffix"
+
+        ## USER-ACTION (optional): The default name field separator for the UI display name is '-'.  Override this separator with a different character, if desired.
+        ## This tag can be set at the agent's global_tag level if the intent is to use the same name field separator for all
+        ## Cloud Insights objects reported by this Telegraf agent.
+        # name_separator = "-"
+
+        cloudinsights_processes_conf_version = "1.0"
+
+    [[outputs.http]]
+      url = "{{ cloudinsights_url }}"
+      insecure_skip_verify = true
+      data_format = "json"
+      namepass = ["processes"]
+      tagexclude = ["CloudInsights"]
+      [outputs.http.headers]
+        Content-Type = "application/json"
+        X-CloudInsights-ApiKey = "{{ cloudinsights_apikey }}"
+        X-CloudInsights-Lake-Category = "agent"
+      [outputs.http.tagpass]
+        CloudInsights = ["true"]
+
+    ##############################
+    ## swap
+    ##############################
+
+    [[inputs.swap]]
+      [inputs.swap.tags]
+        CloudInsights = "true"
+
+        ## USER-ACTION (optional): In case of UI display name clash, disambiguate with 'name_prefix' and/or 'name_suffix' values.
+        ## These tags can be set at the agent's global_tag level if the intent is to prepend and/or append the specified name_prefix
+        ## and name_suffix, respectively, to all Cloud Insights objects reported by this Telegraf agent.
+        # name_prefix = "prefix"
+        # name_suffix = "suffix"
+
+        ## USER-ACTION (optional): The default name field separator for the UI display name is '-'.  Override this separator with a different character, if desired.
+        ## This tag can be set at the agent's global_tag level if the intent is to use the same name field separator for all
+        ## Cloud Insights objects reported by this Telegraf agent.
+        # name_separator = "-"
+
+        cloudinsights_swap_conf_version = "1.0"
+
+    [[outputs.http]]
+      url = "{{ cloudinsights_url }}"
+      insecure_skip_verify = true
+      data_format = "json"
+      namepass = ["swap"]
+      tagexclude = ["CloudInsights"]
+      [outputs.http.headers]
+        Content-Type = "application/json"
+        X-CloudInsights-ApiKey = "{{ cloudinsights_apikey }}"
+        X-CloudInsights-Lake-Category = "agent"
+      [outputs.http.tagpass]
+        CloudInsights = ["true"]
+
+    ##############################
+    ## system
+    ##############################
+
+    [[inputs.system]]
+      [inputs.system.tags]
+        CloudInsights = "true"
+
+        ## USER-ACTION (optional): In case of UI display name clash, disambiguate with 'name_prefix' and/or 'name_suffix' values.
+        ## These tags can be set at the agent's global_tag level if the intent is to prepend and/or append the specified name_prefix
+        ## and name_suffix, respectively, to all Cloud Insights objects reported by this Telegraf agent.
+        # name_prefix = "prefix"
+        # name_suffix = "suffix"
+
+        ## USER-ACTION (optional): The default name field separator for the UI display name is '-'.  Override this separator with a different character, if desired.
+        ## This tag can be set at the agent's global_tag level if the intent is to use the same name field separator for all
+        ## Cloud Insights objects reported by this Telegraf agent.
+        # name_separator = "-"
+
+        cloudinsights_system_conf_version = "1.0"
+
+    [[outputs.http]]
+      url = "{{ cloudinsights_url }}"
+      insecure_skip_verify = true
+      data_format = "json"
+      namepass = ["system"]
+      tagexclude = ["CloudInsights"]
+      fielddrop = ["uptime_format"]
+      [outputs.http.headers]
+        Content-Type = "application/json"
+        X-CloudInsights-ApiKey = "{{ cloudinsights_apikey }}"
+        X-CloudInsights-Lake-Category = "agent"
+      [outputs.http.tagpass]
+        CloudInsights = ["true"]
+

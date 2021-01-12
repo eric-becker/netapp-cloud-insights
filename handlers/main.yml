@@ -1,0 +1,18 @@
+---
+# handlers file for netapp-cloud-insights
+- name: Gather facts
+  package_facts:
+    manager: auto
+
+- name: Restart telegraf
+  service:
+    name: telegraf
+    state: restarted
+    enabled: yes
+  become: yes
+
+- name: Restart Windows telegraf
+  win_service:
+    name: telegraf
+    start_mode: auto
+    state: restarted

@@ -1,0 +1,40 @@
+
+    ##############################
+    ## netstat
+    ##############################
+
+    ## Read TCP metrics such as established, time wait and sockets counts.
+    [[inputs.netstat]]
+      ## no configuration
+
+      tagexclude = ["kubernetes_cluster"]
+
+      [inputs.netstat.tags]
+        CloudInsights = "true"
+
+        ## USER-ACTION (optional): In case of UI display name clash, disambiguate with 'name_prefix' and/or 'name_suffix' values.
+        ## These tags can be set at the agent's global_tag level if the intent is to prepend and/or append the specified name_prefix
+        ## and name_suffix, respectively, to all Cloud Insights objects reported by this Telegraf agent.
+        # name_prefix = "prefix"
+        # name_suffix = "suffix"
+
+        ## USER-ACTION (optional): The default name field separator for the UI display name is '-'.  Override this separator with a different character, if desired.
+        ## This tag can be set at the agent's global_tag level if the intent is to use the same name field separator for all
+        ## Cloud Insights objects reported by this Telegraf agent.
+        # name_separator = "-"
+
+        cloudinsights_netstat_conf_version = "1.0"
+
+    [[outputs.http]]
+      url = "{{ cloudinsights_url }}"
+      insecure_skip_verify = true
+      data_format = "json"
+      namepass = ["netstat"]
+      tagexclude = ["CloudInsights"]
+      [outputs.http.headers]
+        Content-Type = "application/json"
+        X-CloudInsights-ApiKey = "{{ cloudinsights_apikey }}"
+        X-CloudInsights-Lake-Category = "netstat"
+      [outputs.http.tagpass]
+        CloudInsights = ["true"]
+

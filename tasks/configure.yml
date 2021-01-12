@@ -1,0 +1,8 @@
+---
+- name: Configure telegraf
+  include_tasks: "configure_linux.yml"
+  when: ansible_os_family != "Windows"
+
+- name: Install and configure telegraf on Windows
+  include_tasks: configure_windows.yml
+  when: ansible_os_family == "Windows"
